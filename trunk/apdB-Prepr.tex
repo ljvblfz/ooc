@@ -1,0 +1,165 @@
+% # Copyright (C) 2009-2014 the Fandol Team, All wrongs reserved.
+% # -*- coding: utf-8 -*-
+% !TEX encoding = UTF-8 Unicode
+
+% Version Control System Information: Subversion, host on Google Code;
+% FileID:		$Id$;
+% FileDate:		$Date$;
+% FileRevision:	$Revision$
+
+% \chapter{The \cemph{ooc} Preprocessor ---Hints on \cemph{awk} Programming}
+\chapter{\cemph{ooc} 预处理器：\cemph{awk} 编程指南}
+\label{apd:Preprocessor}
+\cemph{awk} was originally delivered with the Seventh Edition of the
+\prop{UNIX} system. Around 1985 the authors extended the language
+significantly and described the result in \cite{AWK88}. Today, there is a
+\prop{POSIX} standard emerging and the new language is available in various
+implementations, e.g., as \cemph{nawk} on \prop{System V}; as \cemph{awk},
+adapted from the same sources, with the \prop{MKS}-Tools for \prop{MSDOS};
+and as \cemph{gawk} from the (new) \cemph{awk} programming language and
+provides an overview of the implementation of the \cemph{ooc} preprocessor.
+The implementation uses several features of the \prop{POSIX} standard, and
+it has been developed with \cemph{gawk}.
+
+% \section{Architecture}
+\section{构型}% Architecture
+\cemph{ooc} is implemented as a shell script to load and execute an
+\cemph{awk} program. The shell script facilitates passing \cemph{ooc}
+command arguments to the \cemph{awk} program and it permits storing the
+various modules in a central place.
+
+The \cemph{awk} program collects a database of information about classes and
+methods from the class description files, and produces C code from the
+database for interface and representation files and for method headers,
+selectors, parameter import, and initialization in the implementation files.
+The \cemph{awk} program is based on two design concepts: modularisation and
+report generation.
+
+A module contains a number of functions and a \ccbf{BEGIN} clause defining
+the global data maintained by the functions. \cemph{awk} does not support
+information hiding, but the modules are kept in separate files to simplify
+maintenance. The \cemph{ooc} command script can use \ccbf{AWKPATH} to locate
+the files in a central place.
+
+All work is done under control of \ccbf{BEGIN} clauses which \cemph{awk}
+will execute in order of appearance. Consequently, \cemph{main.awk} must be
+loaded last, because it processes the \cemph{ooc} command line.
+
+Pattern clauses are not used. They cannot be used for all files anyway,
+because \cemph{ooc} consults for each class description all class
+description files leading up to it. The algorithm to read lines, remove
+comments, and glue continuation lines together is implemented in a single
+function \ccbf{get()} in \cemph{io.awk}. If pattern clauses were used, the
+same algorithm would have to be replicated in pattern clauses.
+
+The database can be inspected if certain debugging modules are loaded as
+part of the \cemph{awk} program. These debugging modules use pattern clauses
+for control, i.e., debugging starts once the command line processing of
+\cemph{ooc} has been completed. Debugging statements are entered from
+standard input and they are executed by the pattern clauses.
+
+Regular output is produced only by interpreting reports. The design goal is
+that the \cemph{awk} program contain as little information about the
+generated code as possible. Code generation should be controlled totally by
+means of changing the report files. Since the \cemph{ooc} command script
+permits substitution of report files, the application programmer may modify
+all output, at least theoretically, without having to change the \cemph{awk}
+program.
+
+% \section{File Management ---\cemph{io.awk}}
+\section{文件管理：\cemph{io.awk}}
+<++>
+
+% \section{Recognition ---\cemph{parse.awk}}
+\section{识别：\cemph{parse.awk}}
+<++>
+
+% \section{The Database}
+\section{数据库}
+<++>
+
+% \section{Report Generation ---\cemph{report.awk}}
+\section{报告生成：\cemph{report.awk}}
+<++>
+
+% \section{Line Numbering}
+\section{行计数}
+<++>
+
+% \section{The Main Program ---\cemph{main.awk}}
+\section{主程序：\cemph{main.awk}}
+<++>
+
+% \section{Report Files}
+\section{报告文件}
+<++>
+
+A quick brown fox jumps over the lazy dogs.
+A quick brown fox jumps over the lazy dogs.
+A quick brown fox jumps over the lazy dogs.
+
+A quick brown fox jumps over the lazy dogs.
+A quick brown fox jumps over the lazy dogs.
+A quick brown fox jumps over the lazy dogs.
+
+% \section{The \cemph{ooc} Command}
+\section{\cemph{ooc} 命令}
+\cemph{ooc} can load an arbitrary number of reports and descriptions, output
+several interface and representation files, and suggest or preprocess
+various implementation files, all in one run. This is a consequence of the
+modular implementation. However, \cemph{ooc} is a genuine filter, i.e., it
+will read files as directed by the command line, but it will only write to
+standard output. If several outputs are produced in one run, they would have
+to be split and written to different files by a postprocessor based on
+\cemph{awk} or \cemph{csplit}. Here are some typical invocations of
+\cemph{ooc}:
+
+\begin{lstlisting}[language=sh,morekeywords={ooc}]
+$ ooc -R Object -h > Object.h		# root class
+$ ooc -R Object -r > Object.r
+$ ooc -R Object Object.dc > Object.c
+
+$ ooc Point -h > Point.h			# other class
+$ ooc -M Point Circle >> makefile	# dependencies
+$ echo "Point.c: Point.d" >> makefile
+$ ooc Circle -dc > Circle.dc		# start an implementation
+$ ooc Circle -dc | ooc Circle - > Circle.c	# fake...
+\end{lstlisting}
+If \cemph{ooc} is called without arguments, it produces the following usage
+description:
+\begin{lstlisting}[language=,keywords={ooc}]
+$ ooc
+usage:	ooc [option ...] [report ...] description target ...
+options:	 -d			arrange for debugging
+			 -l			make #line stamps
+			 -Dnm=val	define val for `nm (one word)
+			 -M			make dependency for each description
+			 -R			process root description
+			 -7 -8 ...	versions for book chapters
+report:		 report.rep	load alternative report file
+description: class		load class description file
+targets:	 -dc		make thunks for last 'class'
+			 -h			make interface for last 'class'
+			 -r			make representation for last 'class'
+			 -			preprocess stdin for last 'class'
+			 source.dc preprocess source for last 'class'
+\end{lstlisting}
+It should be noted that if any report file is loaded, the standard reports
+are not loaded. The way to replace only a single standard report file is to
+provide a file by the same name earlier on \ccbf{OOCPATH}.
+
+The \cemph{ooc} command script needs to be reviewed during installation. It
+contains \ccbf{AWKPATH}, the path for the \cemph{awk} processor to locate
+the modules, and \ccbf{OOCPATH} to locate the reports. This last variable is
+set to look in a standard place as a last resort; if \cemph{ooc} is called
+with \ccbf{OOCPATH} already defined, this value is prefixed to the standard
+place.
+
+To speed things up, the command script checks the entire command line and
+loads only the necessary report files. If \cemph{ooc} is not used correctly,
+the script emits the usage description shown above. Otherwise \cemph{awk} is
+executed by the same process.
+
+\newpage{\thispagestyle{empty}\cleardoublepage}
+% vim: set syntax=tex ts=4 sw=4 tw=76 fo+=Mm cc=+2 noundofile nobackup :
+

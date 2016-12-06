@@ -1,0 +1,192 @@
+% # Copyright (C) 2009-2014 the Fandol Team, All wrongs reserved.
+% # -*- coding: utf-8 -*-
+% !TEX encoding = UTF-8 Unicode
+
+% Version Control System Information: Subversion, host on Google Code;
+% FileID:		$Id$;
+% FileDate:		$Date$;
+% FileRevision:	$Revision$
+
+% \chapter{Programming Savvy ---Arithmetic Expressions}
+\chapter{编程常识：算数表达式}
+\label{ch:psArithmeticExpressions}
+
+动态链接就其本身而言是一种很有用的程序规划技术。
+相比写比较少的附带许多 \ccode{switch} 语句控制许多特殊情况的函数，
+不如写许多短的函数，这样，在每种情况下，都能很好地动态链接。
+这也常常简化了我们的程序工作并且它常常使我们的代码容易扩展。
+
+
+作为例子，我们将要写一个计算由浮点数、圆括号
+及一些常用的加、减等算术符号组成的算术表达式的程序。
+一般说来，我们将要通过规定的编译工具和另外的某编译器
+来生成能计算这个算术运算的目标程序。
+当然，这本书不是谈论编译器的工作原理，
+所以，这一次我们将亲自写出程序代码.
+
+% \section{The Main Loop}
+\section{主循环}
+\label{sec:mainloop}
+
+这个程序的主循环先从标准输入中读取一行，
+并且根据它进行部分初始化，
+这样，数字和操作符就能被提取出来，而且空格也被忽略掉了。
+然后调用一个函数来识别这个正确的算术表达式，
+并以某种方式存储它，最后处理这些存储的结果。
+如果出错，那我们可以简单地阅读下一个输入行。下面是主函数：
+\begin{lstlisting}
+#include <setjmp.h>
+static enum tokens token; /* current input symbol */ /*当前输入信号*/
+static jmp_buf onError;
+int main (void)
+{   volatile int errors = 0;
+    char buf [BUFSIZ];
+
+    if (setjmp(onError))
+    ++ errors;
+    while (gets(buf))
+        if (scan(buf))
+        {   void * e = sum();
+            if (token)
+            error("trash after sum");
+            process(e);
+            delete(e);
+        }
+    return errors > 0;
+}
+void error (const char * fmt, ...)
+{   va_list ap;
+
+    va_start(ap, fmt);
+    vfprintf(stderr, fmt, ap), putc(’\n’, stderr);
+    va_end(ap);
+    longjmp(onError, 1);
+}
+\end{lstlisting}
+
+错误校正在 \ccode{setjmp()} 中定义了。
+如果 \ccode{error()} 函数在程序的某个地方被调用，
+则伴随着 \ccode{setjmp()} 的另一个循环，\ccode{longjmp()} 将继续被执行。
+在这种情况下，结果就就传给了 \ccode{longjmp()}，错误也被保存了，
+同时下一个输入行仍有效。
+离开当前程序时将报告这段代码是否有错误。
+
+
+% \section{The Scanner}
+\section{扫描器}
+\label{sec:scanner}
+
+在主循环中，一旦输入数据被传入 \ccode{buf[]}，
+它就会传递至 \ccode{scan()} 函数，
+为每一处调用函数的地方提供下一个输入变量标志。
+在每行的结束是零标记。
+
+\begin{lstlisting}
+#include <ctype.h>
+#include <errno.h>
+#include <stdlib.h>
+#include "parse.h" /* defines NUMBER */
+static double number; /* if NUMBER: numerical value */
+static enum tokens scan (const char * buf)
+/* return token = next input symbol */ /*返回的标记=下一个输入标记*/
+{   static const char * bp;
+    if (buf)
+        bp = buf; /* new input line */
+    while (isspace(* bp))
+        ++ bp;
+    if (isdigit(* bp) || * bp == ’.’)
+    {   errno = 0;
+        token = NUMBER, number = strtod(bp, (char **) & bp);
+        if (errno == ERANGE)
+            error("bad value: %s", strerror(errno));
+    }
+    else
+        token = * bp ? * bp ++ : 0;
+    return token;
+  }
+\end{lstlisting}
+
+我们调用 scan() ，可传递输入行缓冲的地址，
+或传进一个空指针得以继续工作在当前的行。
+空格被忽略，并且遇到第一个为数字或小数点，
+我们就是用一个ANSI-C 的函数 strtod() 开始提取出浮点数字。
+若为其他的任何字符将被返回，
+并且我们不会预先在输入缓冲传递一个空字节。
+
+% \section{The Recognizer}
+\section{识别器}
+\label{sec:recogn}
+
+% scan() 的结果被存储在全局变量token
+% ——这样简化了识别程序（识别器）。
+% 如果我们侦测出一个数字，我们将返回唯一的值 NUMBER
+% 并使得在全局变量 number 中实际的值有效。
+
+\ccode{scan()} 函数的结果被存取在全局变量中
+——这简化了识别器的工作。
+如果我们发现了一个数值，
+我们就返回它的唯一值并且确保它的全局变量有效。
+
+
+表达式经过由 \ccode{scan()} 函数内部调用的 \ccode{sum()} 函数识别，
+并返回一个能被 \ccode{process()} 函数处理，
+能被 \ccode{delete()} 函数回收的表现形式。
+如果不使用 \prop{yacc}，我们通过递归下降法来识别表达式，
+其中的语法规则被转换成等价的 \prop{C} 语言函数。
+例如：\ccode{sum} 是一个操作数，其后跟随零个或多个组，
+每个组由一个加减运算符和另一个操作数组成。
+语法规则如下
+\begin{lstlisting}
+  sum : product { +|- product }...
+\end{lstlisting}
+被翻译成 \prop{C} 函数就成了
+\begin{lstlisting}
+void sum (void)
+{
+    product();
+    for (;;)
+    {   switch (token) {
+            case ’+’:
+            case ’-’:
+                scan(0), product(); continue;
+        }
+    return;
+    }
+}
+\end{lstlisting}
+
+对每项语法规则都对应一个 \prop{C} 函数，以便于规则之间能够相互调用。
+选择性规则被转换成 \ccode{switch} 或者 \ccode{if} 语句，
+语法中的迭代生成 \prop{C} 语言中的循环。
+唯一需要注意的问题是我们必须避免无限递归。
+
+token 总是包含下一个输入的符号。
+如果我们识别出它，我们必须调用 scan(0) 继续处理输入，
+并在 token 中存储一个新的符号。
+
+
+% \section{The Processor}
+\section{The Processor}<++>
+
+% \section{Information Hiding}
+\section{信息隐藏}<++>
+
+% \section{Dynamic Linkage}
+\section{Dynamic Linkage}<++>
+
+% \section{A Postfix Writer}
+\section{A Postfix Writer}<++>
+
+% \section{Arithmetic}
+\section{Arithmetic}<++>
+
+% \section{Infix Output}
+\section{Infix Output}<++>
+
+% \section{Summary}
+\section{小结}
+
+
+\newpage{\thispagestyle{empty}\cleardoublepage}
+% vim: set syntax=tex ts=4 sw=4 tw=76 fo+=Mm cc=+2 noundofile nobackup :
+

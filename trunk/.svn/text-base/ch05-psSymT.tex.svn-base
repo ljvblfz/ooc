@@ -1,0 +1,54 @@
+% # Copyright (C) 2009-2014 the Fandol Team, All wrongs reserved.
+% # -*- coding: utf-8 -*-
+% !TEX encoding = UTF-8 Unicode
+
+% Version Control System Information: Subversion, host on Google Code;
+% FileID:		$Id$;
+% FileDate:		$Date$;
+% FileRevision:	$Revision$
+
+% \chapter{Programming Savvy ---Symbol Table}
+\chapter{编程常识：符号表}
+\label{ch:psSymbolTable}
+
+% \section{Scanning Identifiers}
+\section{标识符扫描}<++>
+
+% \section{Using Variables}
+\section{使用变量}<++>
+
+% \section{The Screener ---\cemph{Name}}
+\section{The Screener ---\cemph{Name}}<++>
+
+% \section{Superclass Implementation ---\cemph{Name}}
+\section{父类的实现：\cemph{Name}}<++>
+
+% \section{Subclass Implementation ---\cemph{Var}}
+\section{子类的实现：\cemph{Var}}<++>
+
+% \section{Assignment}
+\section{赋值}<++>
+
+% \section{Anothor Subclass ---\cemph{Constants}}
+\section{另一个子类：\cemph{Constants}}<++>
+
+% \section{Mathematical Functions ---\cemph{Math}}<++>
+\section{数学函数：\cemph{Math}}<++>
+
+% \section{Summary}
+\section{小结}<++>
+
+% \section{Exercises}
+\section{练习}<++>
+
+A quick brown fox jumps over the lazy dogs.
+A quick brown fox jumps over the lazy dogs.
+A quick brown fox jumps over the lazy dogs.
+
+A quick brown fox jumps over the lazy dogs.
+A quick brown fox jumps over the lazy dogs.
+A quick brown fox jumps over the lazy dogs.
+
+\newpage{\thispagestyle{empty}\cleardoublepage}
+% vim: set syntax=tex ts=4 sw=4 tw=76 fo+=Mm cc=+2 noundofile nobackup :
+

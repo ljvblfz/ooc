@@ -1,0 +1,96 @@
+% # Copyright (C) 2009-2014 the Fandol Team, All wrongs reserved.
+% # -*- coding: utf-8 -*-
+% !TEX encoding = UTF-8 Unicode
+
+% Version Control System Information: Subversion, host on Google Code;
+% FileID:		$Id$;
+% FileDate:		$Date$;
+% FileRevision:	$Revision$
+
+% In principle, this file can be redistributed and/or modified under
+% the terms of the GNU Public License, version 3 or later.
+%
+% However, this file is supposed to be a template to be modified
+% for your own needs. For this reason, if you use this file as a
+% template and not specifically distribute it as part of a another
+% package/program, I grant the extra permission to freely copy and
+% modify this file as you see fit and even to delete this copyright
+% notice.
+
+% When use CJK, all settings which contains Chinese Characters must be
+% within CJK environment. But \XeTeX{} or Lua\TeX{} does not need this.
+% For better compatibility, all settings about Chinese Locale are separated
+% in this file, and should included in the control file, e.g. paper.tex.
+
+\renewcommand{\chaptername}{第\CJKnumber{\thechapter}章}
+% \renewcommand{\chaptername}{第{\thechapter}章}
+\newcommand{\sectionname}{节}
+\renewcommand{\figurename}{图}
+\renewcommand{\tablename}{表}
+\renewcommand{\bibname}{参考文献}
+\renewcommand{\contentsname}{目\quad 录}
+\renewcommand{\listfigurename}{图~目~录}
+\renewcommand{\listtablename}{表~目~录}
+\renewcommand{\indexname}{索\quad 引}
+
+\newcommand{\prechaptername}{第}
+\newcommand{\postchaptername}{章}
+\newcommand{\chapterformat}
+{\prechaptername\CJKnumber{\thechapter}\postchaptername}
+
+\titleformat{\chapter}[display]
+{\normalfont\flushright\fontsize{50pt}{50pt}\sffamily\bfseries}{\chapterformat}{20pt}{\Huge}
+\titlespacing{\chapter}{0pt}{24pt}{30pt}
+
+\titlecontents{chapter}[0em]{\addvspace{1.5ex}\bfseries}
+{\prechaptername\CJKnumber{\thecontentslabel}\postchaptername\quad}
+{\hspace*{-0.0em}}
+{\hfill{}\contentspage}[\addvspace{0.5ex}]
+
+% \titleformat{\chapter}[block]{\center\Huge}{\chaptername}{20pt}{}
+
+% \renewcommand{\contentsname}{
+% \begin{center}目\quad 录\end{center}
+% }
+\setcounter{tocdepth}{1} % 目录深度
+
+% \renewcommand{\listfigurename}{图形清单}
+% \renewcommand{\listtablename}{表格清单}
+% \renewcommand{\figurename}{图}
+% \renewcommand{\tablename}{表}
+% \renewcommand{\thefigure}{~\arabic{section}.\arabic{subsection}.\arabic{figure}~}
+
+% \renewcommand{\abstractname}{\large 摘\quad 要}
+
+% \theoremstyle{definition}
+% \newtheorem{dfn}{定义}[section]
+% \theoremstyle{plain}
+% I don't know which is the right one, the plain style which theorem looks
+% like, but I think something like problem shouldn't use a Italy font
+% \newtheorem{thm}{\bf 定理}[section]
+% \newtheorem{lem}[theorem]{引理}
+% \newtheorem{cor}[theorem]{推论}
+% \newtheorem{pro}{问题}
+% \newtheorem{prf}{\bf 证明：}
+% \theoremstyle{example}
+% \newtheorem{eg}{例}[section]
+% \theoremstyle{remark}
+% \newtheorem{rmk}{注记}
+
+\renewcommand{\appendixname}{附录}
+\renewcommand{\bibname}{参考文献}
+% \renewcommand{\refname}{参考文献}
+
+% \renewcommand{\chaptername}[2]{第~\thechapter~章}
+% \titleformat{\section}{\centering\Large\bfseries}{第\,\thesection\,章}{1em}{}
+% \usepackage{xCJKnumb} % If you use xeCJK, just pls use CJKnumber instead.
+% \titleformat{\section}{\centering\Large\bfseries}
+% {第\xCJKnumber{\thesection}章}{1em}{}
+
+% \usepackage{titletoc}
+% \titlecontents{section}[0pt]{\vspace{.5\baselineskip}\bfseries}
+%     {第\xCJKnumber{\thecontentslabel}章\quad}{}
+%     {\hspace{.5em}\titlerule*[10pt]{$\cdot$}\contentspage}
+
+% vim: set syntax=tex ts=4 sw=4 tw=76 fo+=Mm cc=+2 noundofile nobackup :
+

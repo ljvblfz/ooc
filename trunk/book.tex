@@ -1,0 +1,54 @@
+% # Copyright (C) 2009-2014 the Fandol Team, All wrongs reserved.
+% # -*- coding: utf-8 -*-
+% !TEX encoding = UTF-8 Unicode
+
+% Version Control System Information: Subversion, host on Google Code;
+% FileID:		$Id$;
+% FileDate:		$Date$;
+% FileRevision:	$Revision$
+
+\documentclass[a4paper, 11pt]{book}
+\input{header}
+\usepackage{wallpaper}
+
+\newcommand{\cemph}[1]{{\ttfamily\slshape #1}}
+% \newcommand{\ccbf}[1]{{\ttfamily\bfseries #1}}
+\newcommand{\ccode}[1]{\lstinline[basicstyle=\ttfamily\bfseries]{#1}}
+\let\ccbf\ccode
+\newcommand{\prop}[1]{{\sffamily #1}}
+\newcommand{\zhindex}[1]{#1\index[zh]{#1}}
+\newcommand{\enindex}[1]{#1\index[en]{#1}}
+
+\begin{document}
+
+\input{locale}
+
+\newcommand{\litux}{\href{http://litux.tk}{LiTuX}}
+
+\newcommand{\thetitle}{ANSI-C面向对象编程}
+\newcommand{\thesubtitle}{}
+\newcommand{\transa}{\litux}
+\newcommand{\transb}{\href{http://blog.csdn.net/SerenityMoon}{三无舍人}}
+\newcommand{\transc}{CU 上众多网友}
+\newcommand{\thetrans}{\transa, \transb, \transc}
+\newcommand{\theauthor}{Axel-Tobias Schreiner}
+\newcommand{\thepublisher}{饭朵文化教育}
+\newcommand{\theauthors}{\theauthor\quad 著\\ \thetrans\quad 译}
+\newcommand{\thedate}{2014年1月}
+\newcommand{\theversion}{版本0.02, \scshape{\textcolor{red}{Draft}}}
+
+\newcommand{\cpp}{C{\texttt{\large ++}} }
+
+\newcommand{\Google}{\href{http://www.google.com}{\textcolor{blue}{G}\textcolor{red}{o}\textcolor{orange}{o}\textcolor{blue}{g}\textcolor{green}{l}\textcolor{red}{e}}}
+
+\setlength\columnsep{18pt}
+\setlength\columnseprule{0.6pt}
+\renewcommand\columnseprulecolor{\color{cyan}}
+\addtocontents{toc}{\protect\begin{multicols}{2}}
+% The body of the book, structures.
+\input{body}
+
+\addtocontents{toc}{\protect\end{multicols}}
+\end{document}
+% vim: set syntax=tex ts=4 sw=4 tw=76 fo+=Mm cc=+2 noundofile nobackup :
+

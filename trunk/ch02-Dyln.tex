@@ -1,0 +1,580 @@
+% # Copyright (C) 2009-2014 the Fandol Team, All wrongs reserved.
+% # -*- coding: utf-8 -*-
+% !TEX encoding = UTF-8 Unicode
+
+% Version Control System Information: Subversion, host on Google Code;
+% FileID:		$Id$;
+% FileDate:		$Date$;
+% FileRevision:	$Revision$
+
+% \chapter{Dynamic Linkage ---Generic Functions}
+\chapter{动态链接：通用函数}
+\label{ch:DynamicLinkage}
+
+% \section{Constructors and Destructors}
+\section{构造函数和析构函数}
+\label{sec:constrdestr}
+
+让我们先实现一个简单的字符串数据类型，
+在后面的章节里，我们会把它放入一个集合中。
+在创建一个新的字符串时，我们分配一块动态的缓冲区来保存它所包含的文本。
+在删除该字符串时，我们需要回收那块缓冲区。
+
+\ccode{new()} 负责创建一个对象，
+而 \ccode{delete()} 必须回收该对象所占用的资源。
+\ccode{new()} 知道它要创建的对象是什么类型的，
+因为它的第一个参数为该对象的描述符。
+依据该参数，我们可以用一系列
+\ccode{if} 语句来分别处理每一种数据类型的对象的创建。
+这种做法的的缺点是，对我们所要支持的每一种数据类型，
+\ccode{new()} 中都要显式地包含特定于该数据类型的代码\footnote{
+    译注：即，需要将数据类型的信息硬编码到 \ccode{new()} 中}。
+
+然而，\ccode{delete()} 所要解决的问题更为棘手。
+它也必须随着被删除对象的类型的不同而作出不同的动作：
+若是一个 \ccode{String} 对象，则必须释放它的文本缓冲区；
+若是在第 \ref{ch:AbstractDateTypes} 章中用过的那种 \ccode{Object} 对象，
+则只需回收该对象自身；而若是一个 \ccode{Set} 对象，
+则需要考虑它可能已经请求了很多内存块用来储存其元素的引用。
+
+我们可以给 \ccode{delete()} 添加一个参数：
+类型描述符或者做清理工作的函数，但这种方式不仅笨拙，而且容易出错。
+有一种更为通用更为优雅的方式，即保证每个对象都知道如何去销毁它所占有的资源。
+可以让每个对象都存有一个指针域，用它可以定位到一个清理函数。
+我们称这种函数为该对象的析构函数。
+
+现在 \ccode{new()} 有一个问题。
+它负责创建对象并返回一个能传递给 \ccode{delete()} 的指针，
+就是说，\ccode{new()} 必须配置每个对象中的析构函数信息。
+很容易想到的办法，是让指向析构函数的指针成为传递给 \ccode{new()}
+的类型描述符的一部分。到目前为止，我们需要的东西类似如下声明：
+\begin{lstlisting}
+struct type {
+    size_t size;            /* size of an object */
+    void (* dtor) (void *); /* destructor */
+};
+struct String {
+    char * text;            /* dynamic string */
+    const void * destroy;   /* locate destructor */
+};
+struct Set {
+    ... information ...
+    const void * destroy;
+};
+\end{lstlisting}
+
+看起来我们有了另一个问题：需要有人把析构函数的指针 \ccode{dtor}
+从类型描述符中拷贝到新对象的 \ccode{destory} 域，
+并且该副本在每一类对象中的位置可能还不尽相同。
+
+初始化是 \ccode{new()} 工作的一部分，不同的类型有不同的事情要做
+——\ccode{new()} 甚至需要为不同的类型而配备不同的参数列表：
+\begin{lstlisting}
+new(Set);            /* make a set */
+new(String, "text"); /* make a string */
+\end{lstlisting}
+
+对于初始化，我们使用另一种特定于类型（译者住：与类型有绑定性质）的函数，
+我们称之为构造函数。由于构造函数和析构函数都是特定于类型的，不会改变，
+我们把他们两个都作为类型描述的一部分传递给 \ccode{new()}。
+
+要注意的是，构造函数和析构函数不负责请求和释放该对象自身所需的内存，
+这是 \ccode{new()} 和 \ccode{delete()} 的工作。
+构造函数由 \ccode{new()} 调用，只负责初始化 \ccode{new()} 分配的内存区域。
+对于一个字符串来说，构造函数做初始化工作时确实需要申请一块内存来存放文本，
+但 \ccode{struct String} 自身所占空间是由 \ccode{new()} 分配的。
+这块空间最后会被 \ccode{delete()} 释放。
+而首先要做的是，\ccode{delete()} 调用析构函数，
+做与构造函数的初始化相逆的工作，然后才是 \ccode{delete()}
+回收 \ccode{new()} 所分配的内存区域。
+
+% \section{Methods, Messages, Classes and Objects}
+\section{方法、消息、类和对象}
+\label{sec:msgcls}
+
+\ccode{delete()} 必须能够在不知所给对象类型的情况下定位到析构函数。
+因此，需要修订第 \ref{sec:constrdestr} 节中的声明，
+对于所有传入 \ccode{delete()} 的对象，
+强调用于定位析构函数的指针必须位于这个对象的头部，
+而不管这些对象具体是什么类型。
+
+这个指针又应该指向什么呢？如果我们有的只是一个对象的地址，
+那么这个指针可让我们访问这个对象的类型信息，诸如析构函数。
+这样看起来我们同样也将很快建立一个其他的类型信息函数，
+诸如显示对象的函数，或者比较函数 \ccode{differ()}，
+又或者可以创建本对象完整拷贝的 \ccode{clone()} 函数。
+因此我将让这个指针指向一个函数指针表。
+
+如此看来，我们认识到这个指针索引表必须是类型描述的一部分，
+并且传给 \ccode{new()}，
+并且显而易见的解决方式便是把整个的类型描述作为一个对象，如下所示：
+\begin{lstlisting}
+struct Class {
+    size_t size;
+    void * (* ctor) (void * self, va_list * app);
+    void * (* dtor) (void * self);
+    void * (* clone) (const void * self);
+    int (* differ) (const void * self, const void * b);
+};
+struct String {
+    const void * class; /* must be first */
+    char * text;
+};
+struct Set {
+    const void * class; /* must be first */
+        ...
+};
+\end{lstlisting}
+
+我们的每一个对象开始于一个指向它自身所拥有的类型描述的指针，
+并且通过这个类型描述，我们能定位这个对象类型描述信息：
+\ccode{.size} 是通过 \ccode{new()} 分配的这个对象的长度；
+\ccode{.ctor} 指针指向被 \ccode{new()} 函数调用的构造函数，
+这个构造函数接受被申请的区域和在初始时传递给 \ccode{new()} 的其余的参数列表；
+\ccode{.dtor} 指向被 \ccode{delete()} 调用的析构函数，用来销毁接受到的对象；
+\ccode{.clone} 指向一个拷贝函数，用来拷贝接受到的对象；
+\ccode{.differ} 指针指向一个用来将这个对象于其他对象进行比较的函数。
+
+大体上看看上面这个函数列表，
+就能发现每个函数都是通过对象来选择作用于不同的对象的。
+只有构造函数要处理那些部分初始化的存储区域。
+我们称这些函数叫做这些对象的方法。
+调用一个方法就叫做一次消息，我们已经用 \ccode{self}
+作为函数参数来标记接收该消息的对象。
+当然这里我们用的是纯 \prop{C} 函数，所以 \ccode{self}
+不一定得是函数的头一个参数。
+
+一些对象将共享同样类型描述，
+就是说，他们需要同样数量的内存和提供同样的方法供使用。
+我们称所有拥有同样类型描述的对象为一个类；
+单独的一个对象称作为这个类的实例。
+到现在为止，一个类、一个抽象数据类型、
+一些可能的值及其的操作也即一个数据类型，几乎是一样的。
+
+一个对象是一个类的实例，也就是说，
+在通过 \ccode{new()} 为它分配了内存后，它就有了一个状态，
+并且这个状态可以通过它所属类的方法进行操作。
+按惯例，一个对象是一个特定数据类型的一个值。
+
+
+% \section{Selectors, Dynamic Linkage, and Polymorphisms}
+\section{选择器、动态连接与多态}
+\label{sec:selectDl}
+
+谁来传递消息？构造函数被 \ccode{new()} 调用来处理几乎没初始化的内存区。
+\begin{lstlisting}
+void * new (const void * _class, ...)
+{
+    const struct Class * class = _class;
+    void * p = calloc(1, class -> size);
+    assert(p);
+    * (const struct Class **) p = class;
+    if (class -> ctor)
+    {   va_list ap;
+        va_start(ap, _class);
+        p = class -> ctor(p, & ap);
+        va_end(ap);
+    }
+    return p;
+}
+\end{lstlisting}
+
+把 \ccode{struct Class} 指针放在一个对象的开始是非常重要的，
+这也是为什么初始化这个已经在 \ccode{new()} 中的指针。
+
+% Image:ch02sec03_struct_Class_pointer.png
+
+上图右方的描述数据类型的类是在编译的时候初始化的，
+对象则是在运行时被创建，此时才将指针安入到其中。
+在以下的赋值中
+\begin{lstlisting}
+* (const struct Class **) p = class;
+\end{lstlisting}
+\ccode{p} 指向该对象的内存区的开始处。
+我们对 \ccode{p} 强制类型转换，使之作为 \ccode{struct Class} 的指针，
+并且把参数 \ccode{class} 设置为这个指针的值。
+
+随后，如果在这个类型描述里有构造函数，
+我们调用它并以它的返回值作为 \ccode{new()} 的返回值，
+即作为 \ccode{new} 出的对象。
+\ref{sec:atom} 节会说明一个聪明的构造函数能够对自身的内存进行管理。
+
+要注意的是，只有像 \ccode{new()} 那样明确可见的函数能有变参数列表。
+用文件 \cemph{stdarg.h} 里的宏 \ccode{va_start()} 对 \ccode{va_list}
+类型的变量 \ccode{ap} 初始化后，就可以通过变量 {ap} 来访问这个变参列表。
+\ccode{new()}只能把整个列表传递给构造函数。
+因此，\ccode{.ctor} 声明使用一个 \ccode{va_list} 参数，
+而不是它自己的变参列表。
+由于我们可能在以后想要在几个函数间共享这些原始参数，
+因此我把 \ccode{ap} 的地址传递给构造函数
+——当它返回后 \ccode{ap} 将指向变参列表中第一个没有被构造函数使用的参数。
+
+\ccode{delete()} 假定每个对象，即每个非空指针，指向一个类型描述对象。
+这是为了在有析构函数时方便调用它。
+在这里，参数
+\ccode{self} 扮演着前面图中的指针 \ccode{p} 的角色。
+我们利用本地变量 \ccode{cp} 进行强制类型转换，
+并且非常小心的从 \ccode{self} 找到它的类型描述：
+
+\begin{lstlisting}
+void delete (void * self)
+{   const struct Class ** cp = self;
+    if (self && * cp && (* cp) -> dtor)
+        self = (* cp) -> dtor(self);
+    free(self);
+}
+\end{lstlisting}
+
+析构函数通过被
+\ccode{delete()} 调用也获得一个机会来换它自身的指针并传给
+\ccode{free()}。
+如果在开始时构造函数想要欺骗，析构函数因而也有机会去更正这个问题，
+见 \ref{sec:atom} 节。
+如果一个对象不想被删除，它的析构函数可以返回一个空指针。
+
+所有其他存储在类型描述中的方法都以类似的方式被调用。
+每个方法都有一个参数 \ccode{self} 用来接受对象，
+并且需要通过它的描述符调用方法。
+\begin{lstlisting}
+int differ (const void * self, const void * b)
+{
+    const struct Class * const * cp = self;
+    assert(self && * cp && (* cp) -> differ);
+    return (* cp) -> differ(self, b);
+}
+\end{lstlisting}
+
+同样核心部分当然是假定我们能直接通过指针 \ccode{self}
+找到一个类型描述指针 \ccode{* self}。
+至少现在我们会提防空指针。
+我们可以是指定一个“幻数”(magic number)于每个类型描述的开始，
+或者甚至用 \ccode{* self} 与所有已知的类型描述的地址或地址范围进行比较。
+第 \ref{ch:DynamicTypeChecking} 章，我们将做更多的严肃的检测。
+
+无论如何，\ccode{differ()} 的示例解释为什么这个调用函数的技术
+被称为动态联接或晚绑定 (late binding)：
+我们能为任意对象调用 \ccode{differ()}
+只要他们有一个适当的类型描述指针作为开始，
+真正工作的函数是尽可能晚得被决定——只有在真正调用时。
+
+我们称 \ccode{differ()} 为一个选择函数。
+这是一个多态函数的例子，即一个函数能接受不同类型的参数，
+并且根据他们类型表现出不同的行为。
+一旦我们实现类型描述符中含有 \ccode{.differ} 的更多的类，
+\ccode{differ()} 便成为一个能适用于任何对象的通用函数。
+
+我们可以认为选择函数是虽然自身不是动态链接的
+但仍表现出类似多态函数的方法，
+这是因为他们让动态链接能作真正的工作。
+
+多态函数通常编译在很多程序语言之中，
+例如在 \prop{Pascal} 中 \ccode{write()} 函数处理不同的参数类型，
+\prop{C} 中的 \ccode{+} 操作符能使用在整型、指针或浮点指针上。
+这叫做重载：参数类型和操作符名共同决定会执行什么样的操作；
+同样的操作符名能同不同参数类型产生不同的操作效果。
+
+这里没有完全清晰的差别：由于动态链接，
+至少对于内置的数据类型，\ccode{differ()} 的行为如同一个重载函数，
+并且 \prop{C} 编译器能产生如同 \ccode{+} 产生的那样的多态函数。
+但是 \prop{C} 编译器能根据不同的
+\ccode{+} 操作符返回创建的不同的返回类型，
+而函数 \ccode{differ()} 必须总是有独立于传入参数的返回类型。
+
+方法可以在没有进行动态链接的情况下成为多态的。
+看如下例子，构造一个函数 \ccode{sizeOf()} 返回任何一个对象的大小：
+
+\begin{lstlisting}
+size_t sizeOf (const void * self)
+{   const struct Class * const * cp = self;
+    assert(self && * cp);
+    return (* cp) -> size;
+}
+\end{lstlisting}
+
+所有的对象都有他们的描述符，
+并且我们可以从描述符中获得 \ccode{size} 的大小，注意他们的区别：
+\begin{lstlisting}
+void * s = new(String, "text");
+assert(sizeof s != sizeOf(s));
+\end{lstlisting}
+
+\ccode{sizeof} 是一个 \prop{C} 的操作符，
+它被用来在编译时计算并返回他的参数的字节个数。
+\ccode{sizeOf()} 是我们多态函数，它在运行时返回参数所指对象的字节个数。
+
+
+% \section{An Application}
+\section{一个应用程序}
+\label{sec:dlApp}
+
+尽管还没有实现字符串，我们仍然能写个简单的测试程序。
+\cemph{String.h} 定义了如下抽象数据类型：
+\begin{lstlisting}
+extern const void * String;
+\end{lstlisting}
+
+我们所有的方法对所有的对象都通用；
+因此，我们把它们的声明放到 \ref{sec:memoryman} 节介绍的内存管理头文件
+\cemph{new.h} 中：
+\begin{lstlisting}
+void * clone (const void * self);
+int differ (const void * self, const void * b);
+size_t sizeOf (const void * self);
+\end{lstlisting}
+
+前两个原型声明选择函数，它们从 \ccode{Class} 结构体中对应的元素中
+通过简单地从声明函数中去掉一次间接而派生出。
+以下是应用：
+\begin{lstlisting}
+#include "String.h"
+#include "new.h"
+int main ()
+{   void * a = new(String, "a"), * aa = clone(a);
+    void * b = new(String, "b");
+    printf("sizeOf(a) == %u\n", sizeOf(a));
+    if (differ(a, b))
+        puts("ok");
+    if (differ(a, aa))
+        puts("differ?");
+    if (a == aa)
+        puts("clone?");
+    delete(a), delete(aa), delete(b);
+    return 0;
+}
+\end{lstlisting}
+
+我们建了两个字符串并复制了其中一个，
+我们显示了 \ccode{String} 对象的大小
+——不是被对象控制的文本\footnote{
+    译注：此处的文本指的是 \prop{C} 字符串，而字符串指的是作者正在实现的对象
+}的大小
+——并且我们确认了两个不同的文本是两个不同的字符串。
+最后，我们确认了复制的字符串于原来的相等却不相同，
+然后我们又把它们删掉了。
+如果一切正常，该程序会打印出：
+
+\begin{lstlisting}
+sizeOf(a) == 8
+ok
+\end{lstlisting}
+
+% \section{An Implementation ---\cemph{String}}
+\section{一个实现：\cemph{String}}
+\label{sec:string}
+
+我们用编写需要被加入到 \ccode{String} 这个类型描述中去的方法来实现字符串。
+动态连接有助于 明确指定需要编写哪些函数来实现一个新的数据类型。
+
+构造函数的文本从传向 \ccode{new()} 的文本中得到，
+并保存一份动态拷贝于由 \ccode{new()} 分配的 \ccode{String} 结构体中。
+
+\begin{lstlisting}
+struct String {
+    const void * class; /* must be first */
+    char * text;
+};
+static void * String_ctor (void * _self, va_list * app)
+{   struct String * self = _self;
+    const char * text = va_arg(* app, const char *);
+    self -> text = malloc(strlen(text) + 1);
+    assert(self -> text);
+    strcpy(self -> text, text);
+    return self;
+}
+\end{lstlisting}
+
+在构造函数中我们只需要初始化 \ccode{.text}，
+因为 \ccode{.class} 已经由 \ccode{new()} 设置。
+
+析构函数释放由字符串控制的动态内存。
+由于只有在 \ccode{self} 非空的情况下 \ccode{delete()} 才会调用析构函数，
+因此在这里我们不需要检查其他事情：
+\begin{lstlisting}
+static void * String_dtor (void * _self)
+{   struct String * self = _self;
+    free(self -> text), self -> text = 0;
+    return self;
+}
+\end{lstlisting}
+
+\ccode{String_clone()} 复制一份字符串。
+由于之后初始的和复制的字符串都将被传送到 \ccode{delete()}，
+所以我们必须产生一份新的字符串的动态拷贝。
+这只要简单的调用 \ccode{new()} 即可。
+\begin{lstlisting}
+static void * String_clone (const void * _self)
+{   const struct String * self = _self;
+    return new(String, self -> text);
+}
+\end{lstlisting}
+
+\ccode{String_differ()} 在比较两个同一的字符串对象时返回 \ccode{false}，
+如果比较的时两个完全不同的对象，则返回 \ccode{true}。
+如果我们比较的是两个不同的字符串，则使用 \ccode{strcmp()}：
+\begin{lstlisting}
+static int String_differ (const void * _self, const void * _b)
+{   const struct String * self = _self;
+    const struct String * b = _b;
+    if (self == b)
+        return 0;
+  if (! b || b -> class != String)
+      return 1;
+  return strcmp(self -> text, b -> text);
+}
+\end{lstlisting}
+
+类型描述符是唯一的
+——在这里我们用这个事实来验证第二个参数是否真的是一个字符串。
+
+这些方法都被设置成静态是因为他们需要被
+\ccode{new()}，\ccode{delete()} 或者其他的选择函数调用。 这些方法通过类型描述符使得他们可以被选择函数调用。
+
+\begin{lstlisting}
+#include "new.r"
+static const struct Class _String = {
+    sizeof(struct String),
+    String_ctor, String_dtor,
+    String_clone, String_differ
+};
+const void * String = & _String;
+\end{lstlisting}
+
+\cemph{String.c} 包含了 \cemph{String.h} 和 \cemph{new.h} 中的公共声明。
+为了能够合适的初始化类型描述符，它也包含了私有头文件 \cemph{new.r}，
+\cemph{new.r} 中包括了在 \ref{sec:msgcls} 节中说明的
+\ccode{struct Class} 的定义。
+
+% \section{Another Implementation --- Atom}
+\section{另一个实现：\cemph{Atom}}
+\label{sec:atom}
+
+为了举例说明我们能使用构造器和析构器接口能做什么，
+我们实现了 \ccode{atoms}。
+每个 \ccode{atom} 是一个唯一的字符串对象；
+如果两个 \ccode{atom} 包含同样的字符串，那么他们是一样的。
+\ccode{atom} 是非常容易比较的：
+如果两个参数指针不同则 \ccode{differ()} 为 \ccode{true}。
+原子的构造于析构的代价更高：
+我们为所有的 \ccode{atoms} 维护了一个循环队列，
+并且我们当 \ccode{atom} 克隆时就算数量：
+\begin{lstlisting}
+struct String {
+    const void * class;         /* must be first */
+    char * text;
+    struct String * next;
+    unsigned count;
+};
+static struct String * ring;    /* of all strings */
+static void * String_clone (const void * _self)
+{   struct String * self = (void *) _self;
+    ++ self -> count;
+    return self;
+}
+\end{lstlisting}
+
+我们所有的 \ccode{atoms} 循环列表是在环中被标志的，
+通过 \ccode{.next} 成员进行扩展，
+并且被 \ccode{string} 的构造函数与析构函数进行维护。
+在构造器保存一个文本之前，他先遍历表内是否有同样的 \ccode{text} 已经存在。
+下段代码被置于字符串构造函数 \ccode{String_ctor()} 之前。
+\begin{lstlisting}
+if (ring)
+{    struct String * p = ring;
+     do
+         if (strcmp(p -> text, text) == 0)
+         {   ++ p -> count;
+             free(self);
+             return p;
+         }
+     while ((p = p -> next) != ring);
+}
+else
+     ring = self;
+self -> next = ring -> next, ring -> next = self;
+self -> count = 1;
+\end{lstlisting}
+
+如果我们找到了一个匹配的 \ccode{atom}，
+我们将累加引用计数，并释放新的字符串自身，随后返回 \ccode{atom p}。
+否则我们将新的字符串对象插入到循环队列中，并设置引用计数为 1。
+
+直到 \ccode{atom} 的引用计数为 0 时，析构器才释放删除这个 \ccode{atom}。
+以下的代码被置于析构函数 \ccode{String_dtor()} 之前：
+\begin{lstlisting}
+if (-- self -> count > 0)
+     return 0;
+assert(ring);
+if (ring == self)
+     ring = self -> next;
+if (ring == self)
+     ring = 0;
+else
+{    struct String * p = ring;
+     while (p -> next != self)
+         p = p -> next;
+     {
+         assert(p != ring);
+     }
+     p -> next = self -> next;
+}
+\end{lstlisting}
+
+如果引用计数是整数，我们返回一个空指针使
+\ccode{delete()} 不处理我们的对象。
+否则我们清除循环链表的标志，
+如果我们的 \ccode{string} 是最后一次引用，
+我们将从链表中删除这个字符串对象。
+
+通过这种方式实现我们的程序，注意克隆出字符串同样是最初的值 % TODO: 不知所云
+\begin{lstlisting}
+sizeOf(a) == 16
+ok
+clone?
+\end{lstlisting}
+
+% \section{Summary}
+\section{小结}
+\label{sec:dlSum}
+
+给定一个指向一个对象的指针，动态链接让我们找到类型详细而精确的函数：
+每个对象开始于一个描述符，这个描述符包含一系列指向对象可用的函数。
+特别是一个描述符包含一个指针指向构造器用来初始化对象的内存区；
+一个指针指向析构器用来在对象被删除前归还对象的资源。
+
+我们成所有对象共享同样的描述符为一个类。
+一个对象是类的一个实例，类型详细而精确的函数被称作对象的方法，
+消息调用这些方法。
+我们使用选择函数为对象来定位并动态链接调用方法。
+
+通过选择器动态链接不同类的相同的函数名，但会带来不同的结果。
+这样的函数被称作动态函数。
+
+动态函数是非常有用的。他们提供一个概念上的抽象：
+\ccode{differ()} 将比较任意两个对象，
+我们不需要记住哪个 \ccode{differ()} 的细节标志在具体情况下是适用的。
+一个低成本并且十分方便的调试工具是多态函数 \ccode{store()}，
+用来显示任何一个在文件描述符上的对象。
+
+
+% \section{Exercises}
+\section{练习}
+\label{sec:dlExer}
+
+为了查看多态函数的行为，我需要实现对象并通过动态链接进行Set。
+对于Set这是有难度的，因为我们不再记录这些元素是由谁来设置。（待修改）
+
+对于字符串，应该有更丰富的方法：
+我们需要知道字符串长度，我们想要指派新的文本内容，
+我们应该能打印字符串。如果我们想做，将会有很多有趣的事情。
+
+如果我们通过哈希表跟踪原子性的增加是更加有效率的。
+那么这些值能否被原子的更改？
+
+\ccode{String_clone()} 造成了一个敏感的问题：
+在这个函数 \ccode{String} 应该同 \ccode{self->class} 用样的值。
+这样是否会造成我们传递给 \ccode{new()} 的参数会有些不同？
+
+
+\newpage{\thispagestyle{empty}\cleardoublepage}
+% vim: set syntax=tex ts=4 sw=4 tw=76 fo+=Mm cc=+2 noundofile nobackup :
+

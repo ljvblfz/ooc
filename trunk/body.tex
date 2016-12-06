@@ -1,0 +1,273 @@
+% # Copyright (C) 2009-2014 the Fandol Team, All wrongs reserved.
+% # -*- coding: utf-8 -*-
+% !TEX encoding = UTF-8 Unicode
+
+% Version Control System Information: Subversion, host on Google Code;
+% FileID:       $Id$;
+% FileDate:     $Date$;
+% FileRevision: $Revision$
+
+% Body part of the book, structures.
+
+% There should be lots of informations at the beginning:
+% # The Cover | blank;
+% # An empty page | blank;
+% # Title page | Info & ISBN etc.;
+% # Maybe Copyrights / Dedicate to | blank;
+% # Preface;
+% # Self Preface;
+
+% # Contains;
+
+% # The body;
+
+% # Bibliography;
+
+% # Index;
+% Or maybe some more, and not this order.
+
+% TODO: The cover and more.
+
+\title{\fontsize{42bp}{\baselineskip} \thetitle} % Only work for Chinese.
+% \title{\Huge \thetitle}
+\author{\Large\bf\theauthors}
+% \author{\Large\bf \theauthor\quad 著\\
+% \Large\bf \thetrans\quad 译}
+\date{\thedate\\ \theversion}
+
+\providecommand*{\wb}[2]{\fontsize{#1}{#2}\usefont{U}{webo}{xl}{n}}
+
+\newcommand{\titleWH}{\begingroup% Words in their Hands
+\newlength\drop
+% \setlength{\drop}{0.1\textheight}
+\drop=2\baselineskip
+\centering
+\vspace*{\drop}
+{\fontsize{32bp}{\baselineskip}\sffamily\bfseries \thetitle} \\[\drop]
+% {\Huge \thetitle}\\[\drop]
+\scalebox{8}[1]{{\wb{10}{12}4}}\\[\drop]
+{\Large \sffamily {\bfseries \theauthor}\quad 著}\\[\baselineskip]
+% {\Large\itshape 著}\\[\baselineskip]
+{\wb{10}{12}4}\\[\baselineskip]
+{\Large \sffamily {\bfseries \thetrans}\quad 译}\par
+% {\Large\itshape 译}\\[\baselineskip]
+\vfill
+\scalebox{8}[1]{{\wb{10}{12}4}}\\[\drop]
+{\Large \thepublisher}\\
+{\scshape \thedate}\par
+\vspace*{\drop}
+\endgroup}
+
+\frontmatter
+\pagestyle{empty}
+\begin{titlepage}
+    % \DeclareFixedFont{\Bf}{T1}{ptm}{b}{n}{3cm}
+    % \PstLightThreeDText[fillstyle=solid,fillcolor=white]{\Bf Test}
+% \centering \Huge
+% \maketitle
+% \Huge\thetitle\\
+% \large\theauthor{}\quad 著 \qquad\thetrans{}\quad 译
+    % \titleWH
+    \pdfbookmark[-1]{\thetitle}{titlepage}
+    \ThisCenterWallPaper{1.0}{cover-v3.jpg}
+    % \vspace*{2cm}
+    \textsf{ \huge 若干技术狂人推荐阅读 }
+    \vspace{3cm}
+    \begin{center}
+    {\fontsize{40bp}{\baselineskip}\sffamily\bfseries \thetitle}
+
+    \vspace{2cm}
+    {\Huge \sffamily {\bfseries \theauthor{} 著}}
+
+    \vspace{1.6cm}
+    {\huge \sffamily {\bfseries \thetrans{} 译}}
+
+    \vspace{12cm}
+
+    {\huge \sffamily \thepublisher{}\quad 中国·青岛}
+    \end{center}
+\end{titlepage}
+
+\cleardoublepage
+% A blank page.
+
+% \chapter*{}
+\vspace*{3cm}
+\begin{center}
+    {\Huge \sffamily \thetitle\\[1em]}
+    {\Large\bf\theauthors\\[2em]}
+    \thedate\\
+    \theversion
+\end{center}
+
+% \vspace{10cm}
+\vfill
+\begin{center}
+    \scshape{Fandol Culture \& Education}\\
+    { \Large \sffamily { \bfseries \thepublisher} \quad 荣誉出品 }
+\end{center}
+
+\newpage
+% \chapter*{}
+\vspace*{2cm}
+\noindent\quad \textbf{图书在版编目（CIP）数据}
+\vspace{1em}
+
+\noindent\quad\thetitle\ / \theauthor\ 著，\litux\ 等，译\ /
+青岛：饭朵文化教育出版，2014.1
+
+\noindent\quad ISBN 7-04-XXXXXX-X
+
+\vspace{2cm}
+Info\ldots
+\vspace{2cm}
+
+\begin{tabular}{cccc}
+    \bf 编\qquad 辑 &   \litux  & \bf 校\qquad 对 & \litux\\
+    \bf 封面设计    &   \litux  & \bf 印\qquad 制 & \litux\\
+\end{tabular}
+
+\bigskip
+
+\renewcommand{\arrayrulewidth}{1.2pt}
+\begin{tabularx}{0.9\textwidth}{cXcX}
+    \hline
+    \bf 出版发行    & \thepublisher     & \bf 地\qquad 址   & 山东省青岛市\\
+    \bf 开\qquad 本 & 787×960 1/16      & \bf 印\qquad 张   & 无实体书\\
+    \bf 字\qquad 数 & XXX 000           & \bf 版\qquad 次   & 第一版\\
+    \bf 字\qquad 数 & XXX 000           & \bf 版\qquad 次   & 第一版\\
+    \bf 字\qquad 数 & XXX 000           & \bf 版\qquad 次   & 第一版\\
+    \bf 字\qquad 数 & XXX 000           & \bf 版\qquad 次   & 第一版\\
+    \bf 字\qquad 数 & XXX 000           & \bf 版\qquad 次   & 第一版\\
+    \bf 字\qquad 数 & XXX 000           & \bf 版\qquad 次   & 第一版\\
+    \bf 字\qquad 数 & XXX 000           & \bf 版\qquad 次   & 第一版\\
+    \bf 字\qquad 数 & XXX 000           & \bf 版\qquad 次   & 第一版\\
+    \bf 字\qquad 数 & XXX 000           & \bf 版\qquad 次   & 第一版\\
+    \bf 字\qquad 数 & XXX 000           & \bf 版\qquad 次   & 第一版\\
+    \hline
+\end{tabularx}
+\vfill
+\noindent {\large\bf 版权所有，侵权必究}
+
+\newpage
+
+% \chapter*{}
+\vspace*{3cm}
+\begin{center}% TODO
+    {\Huge \sffamily 谨此献给 \\[2em]}
+    {\Large
+    山东科技大学\\
+    \bigskip
+    流逝的青春和记忆\\
+    \bigskip
+    以及\\
+    \bigskip
+    {\bf 所有热爱和平的程序猿}
+    }
+\end{center}
+
+\vspace{11cm}
+\begin{flushright}
+    \tiny{还有被拆掉的我的家}
+\end{flushright}
+\frontmatter
+% TODO: We'd better setup the headings style for the page header.
+%\pagestyle{headings}
+\pagestyle{fancy}
+
+\include{preface}
+
+% \begin{multicols}{2}
+% \pdfbookmark[0]{\contentsname}{contents}
+\tableofcontents
+% \end{multicols}
+% \addcontentsline{toc}{chapter}{目\quad 录}
+\newpage{\thispagestyle{empty}\cleardoublepage}
+
+\mainmatter
+\pagestyle{fancy}
+
+\include{ch01-ADT}
+\include{ch02-Dyln}
+\include{ch03-psExpr}
+\include{ch04-inhert}
+\include{ch05-psSymT}
+\include{ch06-Hier}
+\include{ch07-preproc}
+\include{ch08-DyTC}
+\include{ch09-statc}
+\include{ch10-Deleg}
+\include{ch11-Methods}
+\include{ch12-persis}
+\include{ch13-Except}
+\include{ch14-fwMsg}
+
+\appendix
+
+\renewcommand{\chapterformat}
+{附录\thechapter}
+\titlecontents{chapter}[0em]{\addvspace{1.5ex}\bfseries}
+{附录\thecontentslabel\quad}% {附录\thecontentslabel\quad}
+{\hspace*{-0.0em}}
+{\hfill{}\contentspage}[\addvspace{0.5ex}]
+
+% FIXME: I don't know why if I use \include to include apd.A, the label of
+% the contains is incorrect, but when use \input, it turns to be OK. - -||
+\input{apdA-Hints}
+\include{apdB-Prepr}
+\include{apdC-Manual}
+
+\backmatter
+
+\chapter*{索\quad 引}
+\addcontentsline{toc}{chapter}{索\quad 引}
+\chaptermark{索\quad 引}
+\printindex[zh]
+\clearpage
+\printindex[en]
+
+\newpage{\thispagestyle{empty}\cleardoublepage}
+
+\begin{thebibliography}{AWK88}
+
+\bibitem[ANSI]{ANSI}
+    \emph{American National Standard for Information Systems ---Programming
+    Language C} X3.159-1989.
+
+\bibitem[AWK88]{AWK88}
+    A. V. Aho, B. W. Kernighan and P. J. Weingerger \emph{The awk
+    Programming Language} Addison-Wesley 1988, ISBN 0-201-07981-X.
+
+\bibitem[Bud91]{Bud91}
+    T. Budd \emph{An Introduction to Object-Oriented Programming} Prentice
+    Hall 1991, ISBN 0-201-54709-0.
+
+\bibitem[Ker82]{Ker82}
+    B. W. Kernighan ``pic --- A Language for Typesetting Graphics''
+    \emph{Software --- Practice and Experience} January 1982.
+% But I think the emphasis is incorrect?
+
+\bibitem[K\&P84]{KP84}
+    B. W. Kernighan and R. Pike \emph{The UNIX Programming Environment}
+    Prentice Hall 1984, ISBN 0-13-937681-X.
+
+\bibitem[K\&R78]{KR78}
+    B. W. Kernighan and D. M. Ritchie \emph{The C Programming Language}
+    Prentice Hall 1978, ISBN 0-13-110163-3.
+
+\bibitem[K\&R88]{KR88}
+    B. W. Kernighan and D. M. Ritchie \emph{The C Programming Language}
+    Second Edition, Prentice Hall 1988, ISBN 0-13-110362-8.
+
+\bibitem[Sch87]{Sch87}
+    A. T. Schreiner \emph{UNIX Sprechstunde} Hanser 1987, ISBN
+    3-446-14894-9.
+
+\bibitem[Sch90]{Sch90}
+    A. T. Schreiner \emph{Using C with curses, lex, and yacc} Prentice Hall
+    1990, ISBN 0-13-932864-5.
+
+\end{thebibliography}
+
+% vim: set syntax=tex ts=4 sw=4 tw=76 fo+=Mm cc=+2 noundofile nobackup :
+

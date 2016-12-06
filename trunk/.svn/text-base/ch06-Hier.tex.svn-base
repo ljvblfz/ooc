@@ -1,0 +1,57 @@
+% # Copyright (C) 2009-2014 the Fandol Team, All wrongs reserved.
+% # -*- coding: utf-8 -*-
+% !TEX encoding = UTF-8 Unicode
+
+% Version Control System Information: Subversion, host on Google Code;
+% FileID:		$Id$;
+% FileDate:		$Date$;
+% FileRevision:	$Revision$
+
+% \chapter{Class Hierarchy ---Maintainability}
+\chapter{类层次结构：可维护性}
+\label{ch:ClassHierarchy}
+
+% \section{Requirement}
+\section{需求}<++>
+
+% \section{Metaclasses}
+\section{元类}<++>
+
+% \section{Roots ---\cemph{Object and Class}}
+\section{Roots ---\cemph{Object and Class}}<++>
+
+% \section{Subclassing ---\cemph{Any}}
+\section{Subclassing ---\cemph{Any}}<++>
+
+% \section{Implementation ---\cemph{Object}}
+\section{实现：\cemph{Object}}<++>
+
+% \section{Implementation ---\cemph{Class}}
+\section{实现：\cemph{Class}}<++>
+
+% \section{Initialization}
+\section{初始化}<++>
+
+% \section{Selectors}
+\section{选择器}<++>
+
+% \section{Superclass Selectors}
+\section{父类选择器}<++>
+
+% \section{A New Metaclass ---\cemph{PointClass}}
+\section{一个新的元类：\cemph{PointClass}}<++>
+
+% \section{Summary}
+\section{小结}<++>
+
+A quick brown fox jumps over the lazy dogs.
+A quick brown fox jumps over the lazy dogs.
+A quick brown fox jumps over the lazy dogs.
+
+A quick brown fox jumps over the lazy dogs.
+A quick brown fox jumps over the lazy dogs.
+A quick brown fox jumps over the lazy dogs.
+
+\newpage{\thispagestyle{empty}\cleardoublepage}
+% vim: set syntax=tex ts=4 sw=4 tw=76 fo+=Mm cc=+2 noundofile nobackup :
+

@@ -1,0 +1,26 @@
+2014.01:
+	After such a long time, I pick it up again. :)
+	Remove those directories and restructure the contents,
+	rename those files with a useful name.
+	New cover page designed by LiTuX (Yes! I did this ^_^ ).
+	Change the Chinese support to ctex, actually a new documentclass by
+	the Fandol Team, the `ebook` package.
+
+	The most important, continued some translations.
+
+2011.04:
+	Add attachment of the OOC codes, optimize some details of the
+	book structure.
+2011.03:
+	Add LaTeX source, a ready-to-work structure for a book, and convert
+	the plain text into marked LaTeX file, which can produce a book.
+2010.12:
+	Change the binary form into plain text form. 
+	Add more translations.
+2010.11:
+	Microsoft Word format file commit, binary form.
+	Add "Preface" part.
+	Add Chapter 1: Abstract Data Types.
+2010.11:
+	Project Created.
+

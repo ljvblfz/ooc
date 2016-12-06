@@ -1,0 +1,357 @@
+% # Copyright (C) 2009-2014 the Fandol Team, All wrongs reserved.
+% # -*- coding: utf-8 -*-
+% !TEX encoding = UTF-8 Unicode
+
+% Version Control System Information: Subversion, host on Google Code;
+% FileID:		$Id$;
+% FileDate:		$Date$;
+% FileRevision:	$Revision$
+
+% \chapter{\prop{ANSI-C} Programming Hints}
+\chapter{\prop{ANSI-C} 编程提示}
+\label{apd:CProgrammingHints}
+C was originally defined by Dennis Ritchie in the appendix of \cite{KR78}.
+The \prop{ANSI-C} standard \cite{ANSI} appeared about ten years later and
+introduced certain changes and extensions. The differences are summarized
+very concisely in appendix C of \cite{KR88}. Our style of object-oriented
+programming with \prop{ANSI-C} relies on some of the extensions. As an aid
+to classic C programmers, this appendix explains those innovations in
+\prop{ANSI-C} which are important for this book. The appendix is certainly
+not a definition of the \prop{ANSI-C} programming language.
+
+% \section{Names and Scope}
+\section{变量名和作用域}
+\prop{ANSI-C} specifies that names can have almost arbitrary length. Names
+starting with an underscore are reserved for libraries, i.e., they should
+not be used in application programs.
+
+Globally defined names can be hidden in a translation unit, i.e., in a
+source file, by using \ccode{static}:
+\begin{lstlisting}
+static int f(int x) {...}	// Only visible in source file
+int g;						// visible throughout the program
+\end{lstlisting}
+Array names are constant addresses which can be used to initialize pointers
+even if an array references itself:
+\begin{lstlisting}
+struct table{ struct table * tp; }
+	v[] = { v, v+1, v+2 };
+\end{lstlisting}
+It is not entirely clear how one would code a forward reference to an object
+which is still to be hidden in a source file. The following appears to be
+correct:
+\begin{lstlisting}
+extern struct x object;		// forward reference
+f() { object = value; }		// using the reference
+static struct x object;		// hidden definition
+\end{lstlisting}
+
+% \section{Functions}
+\section{函数}
+\prop{ANSI-C} permits ---but does not require ---that the declaration of a
+function contains parameter declarations right inside the parameter list.
+If this is done, the function is declared together with the type of its
+parameters. Parameter names may be specified as part of the function
+declaration, but this has no bearing on the parameter names used in the
+function definition.
+\begin{lstlisting}
+double sqrt();				// classic version
+double sqrt(double);		// ANSI-C
+double sqrt(double x);		// ... with parameter names
+int getpid(void);			// no parameters, ANSI-C
+\end{lstlisting}
+If an \prop{ANSI-C} function prototype has been introduced, an \prop{ANSI-C}
+compiler will try to convert argument values into the types declared for the
+parameters.
+
+Function definitions may use both variants:
+\begin{lstlisting}
+double sqrt(double arg)		// ANSI-C
+{ ... }
+double sqrt(arg)			// classic
+	double arg;
+{ ... }
+\end{lstlisting}
+There are exact rules for the interplay between \prop{ANSI-C} and classic
+prototypes and definitions; however, the rules are complicated and
+error-prone. It is best to stick with \prop{ANSI-C} prototypes and
+definitions, only.
+
+With the option \ccbf{-Wall} the \prop{GNU-C} compiler warns about calls to
+functions that have not been declared.
+
+% \section{Generic Pointers ---\cemph{void *}}
+\section{通用指针：\cemph{void *}}
+Every pointer value can be assigned to a pointer variable with type
+\ccode{void *} and vice versa, except for \ccode{const} qualifiers. The
+assignments do not change the pointer value. Effectively, this turns off
+type checking in the compiler:
+\begin{lstlisting}
+int iv[] = {1, 2, 3};
+int * ip = iv;				// OK, same type
+void * vp = ip;				// OK, arbitrary to void *
+double * dp = vp;			// OK, void * to arbitrary
+\end{lstlisting}
+\ccbf{\%p} is used as a format specification for \ccbf{printf()} and
+(theoretically) for \ccbf{scanf()} to write and read pointer values. The
+corresponding argument type is \ccode{void *} and thus any pointer type:
+\begin{lstlisting}
+void * vp;
+	printf("%p\n", vp);		// display value
+	sanf("%p", & vp);		// read value
+\end{lstlisting}
+Arithmetic operations involving \ccode{void *} are not permitted:
+\begin{lstlisting}
+void * p, ** pp;
+	p + 1					// wrong
+	pp + 1					// OK, pointer to pointer
+\end{lstlisting}
+The following picture illustrates this situation:
+% TODO: Draw the picture.
+
+% \section{\cemph{const}}
+\section{\cemph{const}}
+\ccode{const} is a qualifier indicating that the compiler should not permit
+an assignment. This is quite different from truly constant values.
+Initialization is allowed; \ccode{const} local variables may even be
+initialized with variable values:
+\begin{lstlisting}
+int x = 10;
+int f(){ const int xsave = x; ... }
+\end{lstlisting}
+One can always use explicit typecast operations to circumvent the compiler
+checks:
+\begin{lstlisting}
+const int cx = 10;
+	(int) cx = 20;			// wrong
+	* (int *) & cx = 20;	// not forbidden
+\end{lstlisting}
+These conversions are sometimes necessary when pointer values are assigned:
+% TODO: another fucking figure
+\begin{lstlisting}
+const void * vp;
+
+int * ip;
+int * const p = ip;				// OK for local variable
+
+	vp = ip;					// OK, blocks assignment
+	ip = vp;					// wrong, allows assignment
+	ip = (void *) vp;			// OK, brute force
+	* (const int **) & ip = vp; // OK, overkill
+	p = ip;						// wrong, pointer is blocked
+	* p = 10;					// OK, target is not blocked
+\end{lstlisting}
+\ccode{const} normally binds to the left; however, \ccode{const} may be
+specified before the type name in a declaration:
+\begin{lstlisting}
+int const v[10];			// ten constant elements
+const int * const cp = v;	// constant pointer to constant value
+\end{lstlisting}
+\ccode{const} is used to indicate that one does not want to change a value
+after initialization or from within a function:
+\begin{lstlisting}
+char * strcpy(char * target, const char * source);
+\end{lstlisting}
+The compiler may place global objects into a write-protected segment if they
+have been completely protected with \ccode{const}. This means, for example,
+that the components of a structure inherit \ccode{const}:
+\begin{lstlisting}
+const struct { int i; } c;
+	c.i = 10;				// wrong
+\end{lstlisting}
+This precludes the dynamic initialization of the following pointer, too:
+\begin{lstlisting}
+void * const String;
+\end{lstlisting}
+It is not clear if a function can produce a \ccode{const} result.
+\prop{ANSI-C} does not permit this. \prop{GNU-C} assumes that in this case
+the function does not cause any side effects and only looks at its arguments
+and neither at global variables nor at values behind pointers. Calls to this
+kind of a function can be removed during common subexpression elimination in
+the compilation process.
+
+Because pointer values to \ccode{const} objects cannot be assigned to
+unprotected pointers, \prop{ANSI-C} has a strange declaration for
+\ccbf{bsearch()}:
+\begin{lstlisting}
+void * bsearch(const void * key
+	const void * table, size_t nel, size_t width,
+	int (* cmp) (const void * key, const void * elt));
+\end{lstlisting}
+\ccbf{table[]} is imported with \ccode{const}, i.e., its elements cannot be
+modified and a constant table can be passed as an argument. However, the
+result of \ccbf{bsearch()} points to a table element and does not protect it
+from modification.
+
+As a rule of thumb, the parameters of a function should be pointers to
+\ccode{const} objects exactly if the objects will not be modified by way of
+the pointers. The same applies to pointer variables The result of a function
+should (almost) never involve \ccode{const}.
+
+% \section{\cemph{typedef} and \cemph{const}}
+\section{\cemph{typedef} 和 \cemph{const}}
+\ccode{typedef} does not define macros. \ccode{const} may be bound in
+unexpected ways in the context of a \ccode{typedef}:
+\begin{lstlisting}
+const struct Class { ... } * p;	// protects contents of structure
+typedef struct Class { ... } * ClassP;
+const ClassP cp;			// contents open, pointer protected
+\end{lstlisting}
+How one would protect and pass the elements of a matrix remains a puzzle:
+\begin{lstlisting}
+main()
+{
+	typedef int matrix [10][20];
+	matrix a;
+	int b [10][20];
+
+	int f(const matrix);
+	int g(const int [10][20]);
+
+	f(a);
+	f(b);
+	g(a);
+	g(b);
+}
+\end{lstlisting}
+There are compilers that do not permit any of the calls...
+
+% \section{Structures}
+\section{结构体}
+Structures collect components of different types. Structures, components,
+and variables may all have the same name:
+\begin{lstlisting}
+struct u { int u; double v; } u;
+struct v { double u; int v; } * vp;
+\end{lstlisting}
+Structures components are selected with a period for structure variables and
+with an arrow for pointers to structures:
+\begin{lstlisting}
+u.u = vp -> v;
+\end{lstlisting}
+
+A pointer to a structure can be declared even if the structure itself has
+not yet been introduced. A structure may be declared without objects being
+declared:
+\begin{lstlisting}
+struct w * wp;
+struct w { ... };
+\end{lstlisting}
+A structure may contain a structure:
+\begin{lstlisting}
+struct a { int x; };
+struct b { ... struct a y; ... } b;
+\end{lstlisting}
+The complete sequence of component names is required for access:
+\begin{lstlisting}
+b.y.x = 10;
+\end{lstlisting}
+The first component of a structure starts right at the beginning of the
+structure; therefore, structures can be lengthened or shortened:
+\begin{lstlisting}
+struct a { int x; };
+struct c { sturct a a; ... } c, * cp = & c;
+struct a * ap = & c.a;
+
+	assert( (void *) ap == (void *) cp );
+\end{lstlisting}
+\prop{ANSI-C} permits neither implicit conversions of pointers to different
+structures nor direct access to the components of an inner structure:
+\begin{lstlisting}
+ap = cp;					// wrong
+c.x, cp -> x				// wrong
+cp -> a.x					// OK, fully specified
+( (sturct a *) cp ) -> x	// OK, explicit conversion
+\end{lstlisting}
+
+% \section{Pointers to Functions}
+\section{函数指针}
+The declaration of a pointer to a function is constructed from the
+declaration of a function by adding one level of indirection, i.e., a
+\ccbf{*} operator, to the function name. Parentheses are used to control
+precedence:
+\begin{lstlisting}
+void * 		f	(void *);		// function
+void * (* fp)	(void *) = f;	// pointer to function
+\end{lstlisting}
+These pointers are usually initialized with function names that have been
+declared earlier. In function calls, function names and pointers are used
+identically:
+\begin{lstlisting}
+int x;
+	f		(& x);			// using a function name
+	fp		(& x);			// using a pointer, ANSI-C
+	(* fp)	(& x);			// using a pointer, classic
+\end{lstlisting}
+A pointer to a function can be a structure component:
+\begin{lstlisting}
+struct Class { ...
+	void * (* ctor) (void * self, va_list * app);
+... } * cp, ** cpp;
+\end{lstlisting}
+In a function call, \ccbf{->} has precedence over the function call, but is
+has no precedence over dereferencing with \ccbf{*}, i.e., the parentheses
+are necessary in the second example:
+\begin{lstlisting}
+cp -> ctor ( ... );
+(* cpp) -> ctor ( ... );
+\end{lstlisting}
+
+% \section{Preprocessor}
+\section{预处理器}
+\prop{ANSI-C} no longer expands \ccode{#define} recursively; therefore,
+function calls can be hidden or simplified by macros with the same name:
+\begin{lstlisting}
+#define malloc(type) (type *) malloc(sizeof(type))
+int * [ = malloc(int);
+\end{lstlisting}
+If a macro is defined withe parameters, \prop{ANSI-C} only recognizes its
+invocation if the macro name appears before a left parentheses; therefore,
+macro recognition can be suppressed in a function header by surrounding the
+function name with an extra set of parentheses:
+\begin{lstlisting}
+#include <stdio.h>				// defines putchar(ch) as a macro
+int (putchar) (int ch) { ... }	// name is not replaced
+\end{lstlisting}
+Similarly, the definition of a parametrized macro no longer collides with a
+variable of the same name:
+\begin{lstlisting}
+#define x(p) (((const struct Object *)(p)) -> x)
+int x = 10;						// name is not replaced
+\end{lstlisting}
+
+% \section{Verification ---\cemph{assert.h}}
+\section{断言：\cemph{assert.h}}
+<++>
+
+% \section{Global Jumps ---\cemph{setjmp.h}}
+\section{全局跳转：\cemph{setjmp.h}}
+<++>
+
+% \section{Variable Argument Lists ---\cemph{stdarg.h}}
+\section{变长参数列表：\cemph{stdarg.h}}
+<++>
+
+% \section{Data Types ---\cemph{stddef.h}}
+\section{数据类型：\cemph{stddef.h}}
+<++>
+
+% \section{Memory Management ---\cemph{stdlib.h}}
+\section{内存管理：\cemph{stdlib.h}}
+<++>
+
+% \section{Memory Functions ---\cemph{string.h}}
+\section{内存函数：\cemph{string.h}}
+<++>
+
+A quick brown fox jumps over the lazy dogs.
+A quick brown fox jumps over the lazy dogs.
+A quick brown fox jumps over the lazy dogs.
+
+A quick brown fox jumps over the lazy dogs.
+A quick brown fox jumps over the lazy dogs.
+A quick brown fox jumps over the lazy dogs.
+
+\newpage{\thispagestyle{empty}\cleardoublepage}
+% vim: set syntax=tex ts=4 sw=4 tw=76 fo+=Mm cc=+2 noundofile nobackup :
+

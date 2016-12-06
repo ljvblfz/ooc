@@ -1,0 +1,529 @@
+% # Copyright (C) 2009-2014 the Fandol Team, All wrongs reserved.
+% # -*- coding: utf-8 -*-
+% !TEX encoding = UTF-8 Unicode
+
+% Version Control System Information: Subversion, host on Google Code;
+% FileID:		$Id$;
+% FileDate:		$Date$;
+% FileRevision:	$Revision$
+
+% \chapter{Abstract Data Types ---Information Hiding}
+\chapter{抽象数据类型：信息隐藏}
+\label{ch:AbstractDateTypes}
+
+% \section{Data Types}
+\section{数据类型}
+\label{sec:datatype}
+
+数据类型是每种编程语言不可或缺的一部分，
+仅举几例，\prop{ANSI-C} 就有 \ccode{int}，\ccode{double} 和 \ccode{char}。
+程序员们极少满足于已有的数据类型，
+于是编程语言通常都会提供从预定义的类型创建新数据类型的机制，
+最简单的方法是构造聚合体，比如数组，结构体或是联合体。
+而指针，依照 C. A. R. Hoare 的话
+\footnote{
+Charles Anthony Hoare 的原话为：``Pointers are like jumps, leading wildly
+from one part of the data structure to another. Their introduction into
+high-level languages has been a step backwards from which we may never
+recover''。文中的这句话因没有上下文导致之前的翻译不知所云，是译者的疏忽。
+\hfill ——译注
+}%
+：“……（这种倒退）可能我们永远没办法弥补”，
+却允许我们表示和操作本质上无限复杂的数据。
+
+到底什么是数据类型呢？我们可以从不同角度来看待这个问题。
+数据类型就是值（\prop{value}）的集合
+——\ccode{char} 一般而言有256种不同的值，
+\ccode{int} 的取值就多得多；
+这两者都有均匀的间隔，或多或少像是数学里的自然数或整数。
+\ccode{double} 类型又具有更多数值可取，
+但是它们却显然不同于数学里的实数。
+
+不同于此，我们还可以定义这样一种数据类型，
+它包含了一组值的集合以及作用于该集合之上的一些操作。
+一般来说，这些值应该是计算机能够表示的，
+而这些操作则多少反映了可用的硬件指令。
+在这方面，\prop{ANSI-C} 中的 \ccode{int} 就做得不太好：
+可取值的范围在不同的机器上可能有所不同，
+并且有些操作例如算数右移的表现也可能有所差异。
+
+考虑到更复杂的例子也没有更大的意义，
+一般我们会用结构体来定义\zhindex{线性表}中的元素
+\begin{lstlisting}
+typedef struct node {
+	struct node * next;
+	... information ...
+} node;
+\end{lstlisting}
+而对线性表的操作，我们给出如下表头函数：
+\begin{lstlisting}
+node * head(node * elt, const node * tail);
+\end{lstlisting}
+
+不过，这种处理方式显得非常松散。
+好的编程原则要求我们封装数据项的表示，并且只声明合适的操作。
+
+% \section{Abstract Data Types}
+\section{抽象数据类型}
+\label{sec:adt}
+
+如果我们不把数据表示的细节暴露给用户，那么我们称这个数据类型是\textbf{抽
+象的}。
+从理论层面上讲，这需要我们利用与可能的操作有关的数学原理来表明这种数据类型的属性。例
+如，只有当我们首先经常往一个队列里添加元素时我们才可以删除它，并且我们取回这
+个元素的顺序与它们被加入的顺序是相同的。
+
+抽象数据类型为程序员提供了巨大的灵活性。既然数据表示不是类型定义的一部分，我
+们可以自由的选择更加简单或者最有效的方法。如果我们正确区分了必要的信息（数据
+类型的内部信息），那么数据类型的使用与我们选择实现的方法就完全独立了。
+
+抽象数据类型满足了\textbf{信息隐藏}以及使用与实现\textbf{分而治之}的良好编程
+原则。信息（如数据项的表示）只要被提供给需要知道的它的人就可以了：是实现者而
+不是使用者。通过抽象数据类型我们可以清楚分开实现与使用：我们在把大系统分成小
+模块的道路上顺利前行。
+
+% \section{An Example ---\cemph{Set}}
+\section{一个例子：\cemph{Set}}
+\label{sec:set}
+那么我们怎么实现抽象数据类型呢？作为一个例子我们考虑一个带有 \cemph{add}、
+\cemph{find} 和 \cemph{drop} 操作的元素\zhindex{集合}\footnote{
+不幸的是，\cemph{remove} 是一个用来删除文件的 \prop{ANSI-C} 库函数。如果我们
+使用其命名一个 \prop{\enindex{set}} 的函数，我们就不能再包含 \cemph{stdio.h} 了。}。
+它们适用于一个集合、一个元素，并且返回添加的、查找到的或者从集合中删除的元素
+。\cemph{find} 可以被用来实现 \cemph{contains}，它告诉我们这个集合中是否已经
+包含了这个元素。
+
+从这个角度，集合就是一种抽象数据类型。为了声明我们可以对一个集合做什么，我们
+创建了一个头文件 \cemph{Set.h}
+\begin{lstlisting}
+#ifndef SET_H
+#define SET_H
+
+extern const void * Set;
+
+void * add(void * set, const void * element);
+void * find(const void * set, const void * element);
+void * drop(void * set, const void * element);
+int contains(const void * set, const void * element);
+
+#endif
+\end{lstlisting}
+
+预处理语句保护下面的声明：无论我们包含多少次 \cemph{Set.h}，
+\prop{C} 编译器只会看到它一次。
+这种保护头文件的技术是非常标准的，\prop{GNU C} 编译器可以识别它并且当
+这个保护符号（宏 \ccode{SET_H}）已经被定义了的时候不会再访问 \cemph{Set.h}。
+
+\cemph{Set.h} 是完整的，但是它有用么？我们几乎不能暴露或者显示更少的内容了：
+\ccode{Set} 必须以某种方式来实现操作这个集合：\ccode{add()} 获得一个元素并且
+将其添加进集合，返回该元素，无论这个元素是新加入的还是已经存在于集合中；
+\ccode{find()} 在集合中查找一个元素，返回该元素或者空指针；\ccode{drop()} 定
+位一个元素，从集合中将其删除，并且返回我们删除的元素；\ccode{contains()} 把
+\ccode{find()} 的结果转换成一个真值。
+
+我们一直使用通用指针 \ccode{void *}。一方面它使得了解一个集合到底有什么内容
+变得不可能，但另一方面它允许我们向 \ccode{add()} 和其他的函数传递任何东西。并
+使任何东西都会表现的像一个集合或者一个元素——为了信息隐藏我们牺牲了类型安全
+。然而，
+我们将在第 \ref{ch:DynamicTypeChecking} 章中看到如何才能使这种方式变得实现。
+
+% \section{Memory Management}
+\section{内存管理}
+\label{sec:memoryman}
+我们可能已经忽略了一些事情：如何获得一个集合呢？\ccode{Set} 是一个指针，不是
+一个使用 \ccode{typedef} 定义的类型；所以，我们不能定义一个 \ccode{Set} 类型的
+局部或者全局变量，而只能通过指针来指示集合和元素。并且我们在 \cemph{new.h} 中
+声明所有数据项的资源申请与释放的方法：
+\begin{lstlisting}
+void * new(const void * type, ...);
+void delete(void * item);
+\end{lstlisting}
+就像 \cemph{Set.h} 一样，这个文件被预处理符号 \ccode{NEW_H} 保护。本文只显示了
+每个新文件中更有意义的部分。源文件软盘包含所有示例的完整代码。
+
+\ccode{new()}\index[en]{new()} 接受类似于 \ccode{Set} 一样的描述符以及更多的可能使用的初始化参数
+，它返回一个指向新创建的符合描述参数的数据项的指针。\ccode{delete()}
+\index[en]{delete()} 接受一个
+有 \ccode{new()} 创建的指针并且回收相关资源。
+
+\ccode{new()} 和 \ccode{delete()} 大体上是 \prop{ANSI-C} 函数 \ccode{calloc()}
+和 \ccode{free()} 的一个（向用户暴露的）前端函数。如果使用它们，描述符至少需要
+指明需要申请内存的大小。
+
+% \section{\cemph{Object}}
+\section{\emph{\zhindex{对象}}}
+\label{sec:object}
+如果我们需要收集一个 \prop{set}中任何感兴趣的东西，我们就需要在头文件
+\cemph{Object.h} 中描述另外一个抽象数据类型 \ccode{Object}\index[en]{Object}：
+\begin{lstlisting}
+extern const void * Object;		/* new(Object); */
+
+int differ (const void * a, const void * b);
+\end{lstlisting}
+\ccode{differ()} 能够比较对象：如果它们不相等就返回 \ccode{true}，否则返回
+\ccode{false}。这样的描述为 \ccode{strcmp()} 函数的应用留下空间：对于一些成对
+的对象我们可以选择返回正值或者负值来确定其次序。
+
+生活中的对象需要更多的功能来完成一些实际的事情。目前，我们把自己约束在成为一
+个集合中成员这样一个单纯的需求。如果我们创建一个更大的类库，我们会发现集合—
+—事实上任何其他的东西——也是一个对象。在这点上，大量的实际情况也多少给予了
+我们自由。
+
+% \section{An Application}
+\section{一个应用程序}
+\label{sec:adtApp}
+通过这些定义抽象数据类型的头文件，我们就可以写一个程序 \cemph{main.c}
+\begin{lstlisting}
+#include <stdio.h>
+
+#include "new.h"
+#include "Object.h"
+#include "Set.h"
+
+int main ()
+{
+	void * s = new(Set);
+	void * a = add(s, new(Object));
+	void * b = add(s, new(Object));
+	void * c = new(Object);
+
+	if ( contains(s, a) && contains(s, b) )
+		puts("ok");
+
+	if ( contains(s, c) )
+		puts("contains?");
+
+	if ( differ(a, add(s, a)) )
+		puts("differ?");
+
+	if ( contains(s, drop(s, a)) )
+		puts("drop?");
+
+	delete( drop(s, b) );
+	delete( drop(s, c) );
+
+	return 0;
+}
+\end{lstlisting}
+我们建立一个集合并且加入了两个新的对象。如果一切正常，我就能在集合中找到这两
+个对象，并且诶集合找不到其他的对象。这个程序应该简单的打印出 \ccode{ok}。
+
+对于 \ccode{differ()} 的调用展示了一个语义：一个数学集合中只能包含一份对象
+\ccode{a} 的拷贝；如果试图再加入一次就会返回原始对象并且 \ccode{differ()} 返回
+\ccode{false}。类似的，一旦我们删除了这个对象，它就不在这个集合中了。
+
+删除一个不在集合中的元素会产生一个空指针传递给 \ccode{delete()}。目前我们坚持
+\ccode{free()} 的语义并且它是可以接受空指针的。
+
+% \section{An Implementation ---\cemph{Set}}
+\section{一个实现：\cemph{Set}}
+\cemph{main.c} 可以正确编译，但是我们在链接并且执行这个程序之前，我们必须实
+现这个抽象数据类型并且完成内存管理部分。如果一个对象不存放任何信息并且每个对
+象至多只属于一个集合，那么我们就可以把每个对象和集合都视为唯一的小整数，那么
+也就可以作为数组 \ccode{heap[]} 的索引。如果一个对象是一个集合的元素，那么该对
+象的数组元素中存储着其所在集合的整数索引值。这样，对象指向了包含它的集合。
+
+第一个方案是如此的简单以至于我们可以把所有的模块合到一个简单的文件
+\cemph{Set.c} 中。集合和对象有相同的表示，所以 \ccode{new()} 不再考虑类型描述
+。它只返回一个 \ccode{heap[]} 中值为0的元素：
+\begin{lstlisting}
+#if ! defined MANY || MANY < 1
+#define MANY	10
+#endif
+
+static int heap [MANY];
+
+void * new (const void * type, ...)
+{
+	int * p;		/* & heap[1..] */
+
+	for ( p = heap + 1; p < heap + MANY; ++p )
+		if ( ! *p )
+			break;
+	assert( p < heap + MANY );
+	*p = MANY;
+	return p;
+}
+\end{lstlisting}
+我们用 0 值来标识 \ccode{heap[]} 数组中可用的成员；
+所以不能返回 \ccode{heap[0]} 的引用，
+——因为如果它是一个集合，那么它所包含的元素可能包括索引值 0。
+
+在向集合中增加对象之前，将一个不可能取到的索引值
+\ccode{MANY} 赋给该元素对应的数组成员，这样
+\ccode{new()} 就不可能再次将其分配为新元素，
+我们也不会将其误认为某个集合的元素。
+
+\ccode{new()} 会用完内存。这是很多“不会发生”的错误的第一个。
+我们简单的使用 \prop{ANSI-C} 的 \ccode{assert()} 宏来标记这个错误。
+更为可行的方法应该至少打印出适当的错误信息,
+或者使用用户可以重写的通用错误处理函数。
+然而，就增进编程技术而言，我们更倾向于保持代码的干净整洁。
+\ref{ch:Exceptions} 章中我们会介绍普适的方法来处理异常。
+
+\ccode{delete()} 必须小心处理空指针。
+当 \ccode{heap[]} 数组中的成员被设为 0 时即完成了对其的回收。
+\begin{lstlisting}
+void delete (void * _item)
+{
+	int * item - _item;
+	if (item)
+	{	assert(item > heap && item < heap + MANY);
+		* item = 0;
+	}
+}
+\end{lstlisting}
+我们需要一个统一的方式来处理这些通用指针，
+于是我们用名字前面加下划线的方法来表示这些通用指针，
+并且只用他们来初始化需要的特定类型和名称的局部变量。
+
+集合是由其对象表示出来的：每个集合中的元素都指向集合。
+如果一个元素对应的数组成员值为 \ccode{MANY}，那么该元素就可以被加入到集合中，
+不然的话它一定已经在集合中了，因为我们不允许一个对象属于多个集合。
+\begin{lstlisting}
+void * add (void * _set, const void * _element)
+{
+	int * set = _set;
+	const int * element = _element;
+
+	assert(set > heap && set < heap + MANY);
+	assert(* set == MANY);
+	assert(element > heap && element < heap + MANY);
+
+	if (* element == MANY)
+		* (int *) element = set - heap;
+	else
+		assert(* element == set - heap);
+
+	return (void *) element;
+}
+\end{lstlisting}
+
+\ccode{assert()} 宏保证了我们不会处理指向 \ccode{heap[]} 数组之外的元素，
+并保证集合不能再属于别的集合，也就是集合对应的数组成员的值应为 \ccode{MANY}。
+
+其余的函数也很简单。\ccode{find()} 用来检验其 element 参数对应的
+\ccode{heap[]} 中的数组成员值是不是等于集合对应的数组序号值。
+
+\begin{lstlisting}
+void * find (const void * _set, const void * _element)
+{
+	const int * set = _set;
+	const int * element = _element;
+
+	assert(set > heap && set < heap + MANY);
+	assert(* set == MANY);
+	assert(element > heap && element < heap + MANY);
+	assert(* element);
+
+	return * element == set - heap ? (void *) element : 0;
+}
+\end{lstlisting}
+\ccode{contains()} 函数将 \ccode{find()} 的结果转化为布尔值：
+\begin{lstlisting}
+int contains (const void * _set, const void * _element)
+{
+	return find(_set, _element) != 0;
+}
+\end{lstlisting}
+\ccode{drop()} 利用 \ccode{find()} 函数来检查要被 drop 的元素是否真的属于该集合。
+如果是，我们恢复它的状态，标记为 \ccode{MANY}，并返回它。
+\begin{lstlisting}
+void * drop (void * _set, const void * _element)
+{
+	int * element = find(_set, _element);
+	if (element)
+		* element = MANY;
+	return element;
+}
+\end{lstlisting}
+如果我们挑剔一点，我们还得保证要被除去的元素也不能属于别的集合。
+如果这样，我们拷贝一些 \ccode{find()} 中的代码来实现 \ccode{drop()}。
+
+我们的实现方法很不寻常。事实上在集合操作中我们甚至不需要
+\ccode{differ()} 函数。但是我们依旧要写出它，因为我们应用程序的需要。
+\begin{lstlisting}
+int differ (const void * a, const void * b)
+{
+	return a != b;
+}
+\end{lstlisting}
+元素对象不同也就是他们在数组中对应的序号不同，
+也就是说，仅仅比较元素对应的指针就足够了。
+
+对于这个方案来说，我们已经完成所有的工作了。
+至于 \ccode{Set} 和 \ccode{Object} 描述符其实并不需要，
+我们这里加上只是使 C 编译器高兴：
+\begin{lstlisting}
+const void * Set;
+const void * Object;
+\end{lstlisting}
+在 \ccode{main.c} 中我们就用这两个指针来创造新的集合和元素。
+
+% \section{Anothor Implementation ---\cemph{Bag}}
+\section{另一个实现：\cemph{Bag}}
+\label{sec:bag}
+不需要修改 \cemph{Set.h} 中提供的接口我们便可以更改其实现方法。
+这里我们用动态内存的方法，并且把集合和元素看作结构体：
+\begin{lstlisting}
+struct Set { unsigned count; };
+struct Object { unsigned count; struct Set * in;};
+\end{lstlisting}
+\ccode{count} 用来记录集合中元素的个数，而对于每个元素来说，
+\ccode{count} 记录该元素已经被加入某集合多少次了。
+如果用 \ccode{drop()} 函数从集合中删除该元素的时候我们仅仅对
+\ccode{count} 减一，直到 \ccode{count} 值为 0 时才真正删除该元素，
+此时的数据结构就叫做 \cemph{Bag}，也就是有引用次数记录的元素的集合。
+
+因为我们要用动态存储的方法来表示集合和元素，
+就需要初始化描述符 \ccode{Set} 和 \ccode{Object}，
+这样 \ccode{new()} 才知道需要预留多少内存。
+\begin{lstlisting}
+static const size_t _Set = sizeof(struct Set);
+static const size_t _Object = sizeof(struct Object);
+
+const void * Set = & _Set;
+const void * Object = & _Object;
+\end{lstlisting}
+\ccode{new()} 函数变得简单多了：
+\begin{lstlisting}
+void * new (const void * type, ...)
+{
+	const size_t size = * (const size_t *) type;
+	void * p = calloc(1, size);
+
+	assert(p);
+	return p;
+}
+\end{lstlisting}
+\ccode{delete()} 函数也可以将其参数直接传给 \ccode{free()} 函数
+——在 \prop{ANSI-C} 中空指针也可以传给 \ccode{free()} 函数。
+
+\ccode{add()} 必须更多的信任其指针参数了。
+其将元素引用计数与集合元素数都加一。
+\begin{lstlisting}
+void * add (void * _set, const void * _element)
+{
+	struct Set * set = _set;
+	struct Object * element = (void *) _element;
+	assert(set);
+	assert(element);
+	if (! element -> in)
+		element -> in = set;
+	else
+		assert(element -> in == set);
+	++ element -> count, ++ set -> count;
+	return element;
+}
+\end{lstlisting}
+\ccode{find()} 函数依旧要检查要查找的元素是不是指向着合适的集合：
+\begin{lstlisting}
+void * find (const void * _set, const void * _element)
+{
+	const struct Object * element = _element;
+
+	assert(_set);
+	assert(element);
+
+	return element -> in == _set ? (void *) element : 0;
+}
+\end{lstlisting}
+\ccode{contains()} 函数基于 \ccode{find()} 所以没有任何变化。
+
+如果 \ccode{drop()} 函数在集合中发现了其参数所指向的元素，
+便将该元素的引用计数和集合元素数减一。
+如果该元素的引用计数变为 0，则从集合中删除该元素。
+\begin{lstlisting}
+void * drop (void * _set, const void * _element)
+{
+	struct Set * set = _set;
+	struct Object * element = find(set, _element);
+	if (element)
+	{
+		if (-- element -> count == 0)
+			element -> in = 0;
+		-- set -> count;
+	}
+	return element;
+}
+\end{lstlisting}
+
+现在又新加入一个函数 \ccode{count()}，用来计算集合中元素的个数：
+\begin{lstlisting}
+unsigned count (const void * _set)
+{
+	const struct Set * set = _set;
+
+	assert(set);
+	return set -> count;
+}
+\end{lstlisting}
+当然了，如果直接让程序去读取结构体的 \ccode{.count} 成员会简单很多，
+但是我们坚持不应泄漏集合的表示方法。
+与让程序能够直接修改程序关键数值的危险相比，
+多调用几次函数的代价真不算什么。
+
+包和集合不同：在包中，任何一个元素可以被多次加入；
+只有被扔掉的次数和放入包中的次数想同时，它才会从包中消失。
+在第 \ref{sec:adtApp} 节的程序中，我们将一个元素 \ccode{a} 两次加入集合，
+在将其从包中删除一次后，\ccode{contains()} 依旧能够从包中找到该元素。
+程序会有如下输出：
+\begin{lstlisting}
+ok
+drop?
+\end{lstlisting}
+
+% \section{Summary}
+\section{小结}
+\label{sec:adtsum}
+对于一个抽象数据结构来说，我们完全隐藏了其所有的实现细节，
+比如数据项的表示方法等等。
+
+程序代码只能访问头文件，
+该文件仅仅声明数据类型的描述符指针以及作用于该数据类型的操作。
+
+描述符指针传给通用函数 \ccode{new()} 来获得一个指向数据项的指针。
+这个指针传给另一个通用函数 \ccode{delete()} 来回收其相关的资源。
+
+一般来说，每个抽象数据类型都在一个单独的代码文件中实现。
+理想情况下，它也不能看到别的数据类型的具体实现。
+描述符指针应该至少指向一个常数值 \ccode{size_t}
+用来指明数据项需要的空间。
+
+% \section{Exercises}
+\section{练习}
+\label{sec:adtExer}
+如果一个元素可以同时属于多个集合，集合的实现就必须改变了。
+如果我们继续用一些惟一的小整数来表示元素，
+并且限定了可用元素的上限，那么就可以把一个集合表示成一个位图，
+并以一个长字符串的形式存储。
+其中某一位如果是选中的就表示其对应的元素在该集合中，否则则不在。
+
+更通用更常见的方法是用线性链表的节点存放集合中元素的地址。
+这种方法对元素没有任何限制，
+并且允许在不了解元素的实现方法的情况下实现集合。
+
+能查看单个元素对于调试是很有帮助的。
+一个合理的通用解决方法是定义两个函数：
+\begin{lstlisting}
+int store (const void * object, FILE * fp);
+int storev (const void * object, va_list ap);
+\end{lstlisting}
+\ccode{store()} 向文件指针 \ccode{fp} 所指文件内写入对元素的描述。
+\ccode{storev()} 则使用 \ccode{va_arg()} 取得 \ccode{ap}
+所指之参数表中的文件指针，然后向该文件指针写入对元素的描述。
+两个函数都返回写入的字符数。
+在下列的集合函数中 \ccode{storev()} 更实用一些：
+\begin{lstlisting}
+int apply (const void * set,
+	int (* action) (void * object, va_list ap), ...);
+\end{lstlisting}
+\ccode{apply()} 对 \ccode{set} 中的每一个元素调用
+\ccode{action()}，并将参数表中其余的参数传递给 \ccode{action()}。
+\ccode{action()} 不可以改变 \ccode{set}，
+但可以通过返回 0 而提早终止 \ccode{apply()}。
+若所有元素都得到处理则 \ccode{apply()} 返回 \ccode{true}。
+
+\newpage{\thispagestyle{empty}\cleardoublepage}
+% vim: set syntax=tex ts=4 sw=4 tw=76 fo+=Mm cc=+2 noundofile nobackup :
+
